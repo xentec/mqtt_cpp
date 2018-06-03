@@ -44,7 +44,7 @@ using con_sp_t = boost::variant<
 
 class test_broker {
 public:
-    test_broker(as::io_service& ios)
+    test_broker(as::io_context& ios)
         :ios_(ios),
          tim_disconnect_(ios_)
     {}
@@ -544,7 +544,7 @@ private:
         >
     >;
 
-    as::io_service& ios_;
+    as::io_context& ios_;
     as::deadline_timer tim_disconnect_;
     boost::optional<boost::posix_time::time_duration> delay_disconnect_;
     mi_cid_con cons_;

@@ -23,7 +23,7 @@ template <typename Socket, typename Strand>
 class ws_endpoint {
 public:
     template <typename... Args>
-    ws_endpoint(as::io_service& ios, Args&&... args)
+    ws_endpoint(as::io_context& ios, Args&&... args)
         :ws_(ios, std::forward<Args>(args)...),
          strand_(ios) {
         ws_.binary(true);
@@ -40,8 +40,8 @@ public:
         ec = boost::system::errc::make_error_code(boost::system::errc::success);
     }
 
-    as::io_service& get_io_service() {
-        return ws_.get_io_service();
+    as::io_context& get_io_context() {
+        return ws_.get_io_context();
     }
 
     typename boost::beast::websocket::stream<Socket>::lowest_layer_type& lowest_layer() {

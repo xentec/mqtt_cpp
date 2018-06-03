@@ -27,7 +27,7 @@ namespace mqtt {
 
 namespace as = boost::asio;
 
-template <typename Strand = as::io_service::strand, typename Mutex = std::mutex, template<typename...> class LockGuard = std::lock_guard>
+template <typename Strand = as::io_context::strand, typename Mutex = std::mutex, template<typename...> class LockGuard = std::lock_guard>
 class server {
 public:
     using socket_t = tcp_endpoint<as::ip::tcp::socket, Strand>;
@@ -43,8 +43,8 @@ public:
     template <typename AsioEndpoint, typename AcceptorConfig>
     server(
         AsioEndpoint&& ep,
-        as::io_service& ios_accept,
-        as::io_service& ios_con,
+        as::io_context& ios_accept,
+        as::io_context& ios_con,
         AcceptorConfig&& config)
         : ios_accept_(ios_accept),
           ios_con_(ios_con),
@@ -56,21 +56,21 @@ public:
     template <typename AsioEndpoint>
     server(
         AsioEndpoint&& ep,
-        as::io_service& ios_accept,
-        as::io_service& ios_con)
+        as::io_context& ios_accept,
+        as::io_context& ios_con)
         : server(std::forward<AsioEndpoint>(ep), ios_accept, ios_con, [](as::ip::tcp::acceptor&) {}) {}
 
     template <typename AsioEndpoint, typename AcceptorConfig>
     server(
         AsioEndpoint&& ep,
-        as::io_service& ios,
+        as::io_context& ios,
         AcceptorConfig&& config)
         : server(std::forward<AsioEndpoint>(ep), ios, ios, std::forward<AcceptorConfig>(config)) {}
 
     template <typename AsioEndpoint>
     server(
         AsioEndpoint&& ep,
-        as::io_service& ios)
+        as::io_context& ios)
         : server(std::forward<AsioEndpoint>(ep), ios, ios, [](as::ip::tcp::acceptor&) {}) {}
 
     void listen() {
@@ -119,8 +119,8 @@ private:
     }
 
 private:
-    as::io_service& ios_accept_;
-    as::io_service& ios_con_;
+    as::io_context& ios_accept_;
+    as::io_context& ios_con_;
     as::ip::tcp::acceptor acceptor_;
     std::unique_ptr<socket_t> socket_;
     bool close_request_;
@@ -130,7 +130,7 @@ private:
 
 #if !defined(MQTT_NO_TLS)
 
-template <typename Strand = as::io_service::strand, typename Mutex = std::mutex, template<typename...> class LockGuard = std::lock_guard>
+template <typename Strand = as::io_context::strand, typename Mutex = std::mutex, template<typename...> class LockGuard = std::lock_guard>
 class server_tls {
 public:
     using socket_t = tcp_endpoint<as::ssl::stream<as::ip::tcp::socket>, Strand>;
@@ -147,8 +147,8 @@ public:
     server_tls(
         AsioEndpoint&& ep,
         as::ssl::context&& ctx,
-        as::io_service& ios_accept,
-        as::io_service& ios_con,
+        as::io_context& ios_accept,
+        as::io_context& ios_con,
         AcceptorConfig&& config)
         : ios_accept_(ios_accept),
           ios_con_(ios_con),
@@ -162,15 +162,15 @@ public:
     server_tls(
         AsioEndpoint&& ep,
         as::ssl::context&& ctx,
-        as::io_service& ios_accept,
-        as::io_service& ios_con)
+        as::io_context& ios_accept,
+        as::io_context& ios_con)
         : server_tls(std::forward<AsioEndpoint>(ep), std::move(ctx), ios_accept, ios_con, [](as::ip::tcp::acceptor&) {}) {}
 
     template <typename AsioEndpoint, typename AcceptorConfig>
     server_tls(
         AsioEndpoint&& ep,
         as::ssl::context&& ctx,
-        as::io_service& ios,
+        as::io_context& ios,
         AcceptorConfig&& config)
         : server_tls(std::forward<AsioEndpoint>(ep), std::move(ctx), ios, ios, std::forward<AcceptorConfig>(config)) {}
 
@@ -178,7 +178,7 @@ public:
     server_tls(
         AsioEndpoint&& ep,
         as::ssl::context&& ctx,
-        as::io_service& ios)
+        as::io_context& ios)
         : server_tls(std::forward<AsioEndpoint>(ep), std::move(ctx), ios, ios, [](as::ip::tcp::acceptor&) {}) {}
 
     void listen() {
@@ -237,8 +237,8 @@ private:
     }
 
 private:
-    as::io_service& ios_accept_;
-    as::io_service& ios_con_;
+    as::io_context& ios_accept_;
+    as::io_context& ios_con_;
     as::ip::tcp::acceptor acceptor_;
     std::unique_ptr<socket_t> socket_;
     bool close_request_;
@@ -266,7 +266,7 @@ private:
     std::string s_;
 };
 
-template <typename Strand = as::io_service::strand, typename Mutex = std::mutex, template<typename...> class LockGuard = std::lock_guard>
+template <typename Strand = as::io_context::strand, typename Mutex = std::mutex, template<typename...> class LockGuard = std::lock_guard>
 class server_ws {
 public:
     using socket_t = ws_endpoint<as::ip::tcp::socket, Strand>;
@@ -282,8 +282,8 @@ public:
     template <typename AsioEndpoint, typename AcceptorConfig>
     server_ws(
         AsioEndpoint&& ep,
-        as::io_service& ios_accept,
-        as::io_service& ios_con,
+        as::io_context& ios_accept,
+        as::io_context& ios_con,
         AcceptorConfig&& config)
         : ios_accept_(ios_accept),
           ios_con_(ios_con),
@@ -295,21 +295,21 @@ public:
     template <typename AsioEndpoint>
     server_ws(
         AsioEndpoint&& ep,
-        as::io_service& ios_accept,
-        as::io_service& ios_con)
+        as::io_context& ios_accept,
+        as::io_context& ios_con)
         : server_ws(std::forward<AsioEndpoint>(ep), ios_accept, ios_con, [](as::ip::tcp::acceptor&) {}) {}
 
     template <typename AsioEndpoint, typename AcceptorConfig>
     server_ws(
         AsioEndpoint&& ep,
-        as::io_service& ios,
+        as::io_context& ios,
         AcceptorConfig&& config)
         : server_ws(std::forward<AsioEndpoint>(ep), ios, ios, std::forward<AcceptorConfig>(config)) {}
 
     template <typename AsioEndpoint>
     server_ws(
         AsioEndpoint&& ep,
-        as::io_service& ios)
+        as::io_context& ios)
         : server_ws(std::forward<AsioEndpoint>(ep), ios, ios, [](as::ip::tcp::acceptor&) {}) {}
 
     void listen() {
@@ -393,8 +393,8 @@ private:
     }
 
 private:
-    as::io_service& ios_accept_;
-    as::io_service& ios_con_;
+    as::io_context& ios_accept_;
+    as::io_context& ios_con_;
     as::ip::tcp::acceptor acceptor_;
     std::unique_ptr<socket_t> socket_;
     bool close_request_;
@@ -405,7 +405,7 @@ private:
 
 #if !defined(MQTT_NO_TLS)
 
-template <typename Strand = as::io_service::strand, typename Mutex = std::mutex, template<typename...> class LockGuard = std::lock_guard>
+template <typename Strand = as::io_context::strand, typename Mutex = std::mutex, template<typename...> class LockGuard = std::lock_guard>
 class server_tls_ws {
 public:
     using socket_t = mqtt::ws_endpoint<as::ssl::stream<as::ip::tcp::socket>, Strand>;
@@ -423,8 +423,8 @@ public:
     server_tls_ws(
         AsioEndpoint&& ep,
         as::ssl::context&& ctx,
-        as::io_service& ios_accept,
-        as::io_service& ios_con,
+        as::io_context& ios_accept,
+        as::io_context& ios_con,
         AcceptorConfig&& config)
         : ios_accept_(ios_accept),
           ios_con_(ios_con),
@@ -438,15 +438,15 @@ public:
     server_tls_ws(
         AsioEndpoint&& ep,
         as::ssl::context&& ctx,
-        as::io_service& ios_accept,
-        as::io_service& ios_con)
+        as::io_context& ios_accept,
+        as::io_context& ios_con)
         : server_tls_ws(std::forward<AsioEndpoint>(ep), std::move(ctx), ios_accept, ios_con, [](as::ip::tcp::acceptor&) {}) {}
 
     template <typename AsioEndpoint, typename AcceptorConfig>
     server_tls_ws(
         AsioEndpoint&& ep,
         as::ssl::context&& ctx,
-        as::io_service& ios,
+        as::io_context& ios,
         AcceptorConfig&& config)
         : server_tls_ws(std::forward<AsioEndpoint>(ep), std::move(ctx), ios, ios, std::forward<AcceptorConfig>(config)) {}
 
@@ -454,7 +454,7 @@ public:
     server_tls_ws(
         AsioEndpoint&& ep,
         as::ssl::context&& ctx,
-        as::io_service& ios)
+        as::io_context& ios)
         : server_tls_ws(std::forward<AsioEndpoint>(ep), std::move(ctx), ios, ios, [](as::ip::tcp::acceptor&) {}) {}
 
     void listen() {
@@ -548,8 +548,8 @@ private:
     }
 
 private:
-    as::io_service& ios_accept_;
-    as::io_service& ios_con_;
+    as::io_context& ios_accept_;
+    as::io_context& ios_con_;
     as::ip::tcp::acceptor acceptor_;
     std::unique_ptr<socket_t> socket_;
     bool close_request_;

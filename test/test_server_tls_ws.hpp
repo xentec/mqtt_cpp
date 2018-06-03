@@ -25,7 +25,7 @@ namespace as = boost::asio;
 
 class test_server_tls_ws : ctx_init {
 public:
-    test_server_tls_ws(as::io_service& ios, test_broker& b)
+    test_server_tls_ws(as::io_context& ios, test_broker& b)
         : server_(as::ip::tcp::endpoint(as::ip::tcp::v4(), broker_tls_ws_port), std::move(ctx), ios), b_(b) {
         server_.set_error_handler(
             [](boost::system::error_code const& /*ec*/) {
