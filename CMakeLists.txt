@@ -1,80 +1,96 @@
-CMAKE_MINIMUM_REQUIRED (VERSION 2.8.6)
+CMAKE_MINIMUM_REQUIRED (VERSION 3.1)
 PROJECT (mqtt_cpp)
 
 IF ((CMAKE_VERSION VERSION_GREATER 3.1) OR
-    (CMAKE_VERSION VERSION_EQUAL 3.1))
+	(CMAKE_VERSION VERSION_EQUAL 3.1))
     CMAKE_POLICY(SET CMP0054 NEW)
 ENDIF ()
 
+option(MQTT_NO_TLS "Disable TLS" ON)
+option(MQTT_USE_WS "Enable WebSockets" OFF)
+option(MQTT_BUILD_EXAMPLES "" OFF)
+option(MQTT_BUILD_TESTING "" OFF)
+
+
+add_library(mqtt_cpp INTERFACE)
+
+target_compile_features(mqtt_cpp INTERFACE "cxx_std_14")
+target_include_directories(mqtt_cpp
+	INTERFACE
+	    "$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>"
+		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+)
+
+set(MQTT_DEFS "")
+
 IF (MQTT_NO_TLS)
-    MESSAGE (STATUS "TLS disabled")
-    SET (CMAKE_CXX_FLAGS "-DMQTT_NO_TLS ${CMAKE_CXX_FLAGS}")
+    LIST(APPEND MQTT_DEFS "MQTT_NO_TLS")
 ELSE ()
     MESSAGE (STATUS "TLS enabled")
-    FIND_PACKAGE (OpenSSL)
+	FIND_PACKAGE (OpenSSL)
 ENDIF ()
 
 IF (MQTT_USE_WS)
-    MESSAGE (STATUS "WebSocket enabled")
-    SET (CMAKE_CXX_FLAGS "-DMQTT_USE_WS ${CMAKE_CXX_FLAGS}")
+    LIST(APPEND MQTT_DEFS "MQTT_USE_WS")
 ELSE ()
     MESSAGE (STATUS "WebSocket disabled")
 ENDIF ()
+
+target_compile_definitions(mqtt_cpp INTERFACE ${MQTT_DEFS})
 
 IF ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     SET (CMAKE_CXX_FLAGS "/bigobj ${CMAKE_CXX_FLAGS}")
 ENDIF ()
 
-SET (Boost_USE_STATIC_LIBS        ON) # only find static libs
-SET (Boost_USE_MULTITHREADED      ON)
-# SET (Boost_USE_STATIC_RUNTIME    OFF)
-FIND_PACKAGE (Boost 1.59.0 COMPONENTS chrono timer test_exec_monitor system)
+FIND_PACKAGE (Boost 1.66.0 COMPONENTS chrono timer test_exec_monitor system)
 FIND_PACKAGE (Threads)
 
-IF (NOT MQTT_BEAST_INCLUDE_DIR)
-    IF (${Boost_VERSION} LESS 106600)
-        SET (MQTT_BEAST_INCLUDE_DIR "external/beast/include")
-    ENDIF ()
-ENDIF ()
-
-INCLUDE_DIRECTORIES (
-    ${Boost_INCLUDE_DIR}
-    ${MQTT_BEAST_INCLUDE_DIR}
-    include
-)
 
 IF (NOT MQTT_NO_TLS)
-    INCLUDE_DIRECTORIES (
-        ${OpenSSL_INCLUDE_DIR}
-        ${MQTT_OPENSSL_INCLUDE_DIR}
-    )
+    set(MQTT_TLS_INCL
+		${OpenSSL_INCLUDE_DIR}
+		${MQTT_OPENSSL_INCLUDE_DIR}
+	)
 ENDIF ()
 
-ENABLE_TESTING ()
-ADD_SUBDIRECTORY (test)
-ADD_SUBDIRECTORY (example)
+target_include_directories(mqtt_cpp
+	INTERFACE
+	    ${Boost_INCLUDE_DIR}
+		${MQTT_BEAST_INCLUDE_DIR}
+		${MQTT_TLS_INCL}
+		include
+)
+
+if(MQTT_BUILD_EXAMPLES)
+	add_subdirectory(example)
+endif()
+
+if(MQTT_BUILD_TESTING)
+	ENABLE_TESTING ()
+	add_subdirectory(test)
+endif()
 
 # Doxygen
 FIND_PACKAGE (Doxygen)
 IF (DOXYGEN_FOUND)
     LIST (APPEND Doxyfile_CONTENT
-        COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        COMMAND ${CMAKE_COMMAND} -E echo "FILE_PATTERNS      = *.hpp" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        COMMAND ${CMAKE_COMMAND} -E echo "OUTPUT_DIRECTORY   = doc" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        COMMAND ${CMAKE_COMMAND} -E echo "PROJECT_NAME       = \"mqtt_cpp\"" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        COMMAND ${CMAKE_COMMAND} -E echo "EXTRACT_ALL        = YES" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        COMMAND ${CMAKE_COMMAND} -E echo "RECURSIVE          = YES" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        COMMAND ${CMAKE_COMMAND} -E echo "INPUT              = ${CMAKE_CURRENT_SOURCE_DIR}/include" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    )
-    IF (DOXYGEN_DOT_FOUND)
-        LIST (APPEND Doxyfile_CONTENT
-            COMMAND ${CMAKE_COMMAND} -E echo "HAVE_DOT       = YES" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        )
-    ENDIF ()
-    ADD_CUSTOM_TARGET (
-        doxygen
-        ${Doxyfile_CONTENT}
-        COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-        VERBATIM
-    )
+		COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+		COMMAND ${CMAKE_COMMAND} -E echo "FILE_PATTERNS      = *.hpp" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+		COMMAND ${CMAKE_COMMAND} -E echo "OUTPUT_DIRECTORY   = doc" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+		COMMAND ${CMAKE_COMMAND} -E echo "PROJECT_NAME       = \"mqtt_cpp\"" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+		COMMAND ${CMAKE_COMMAND} -E echo "EXTRACT_ALL        = YES" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+		COMMAND ${CMAKE_COMMAND} -E echo "RECURSIVE          = YES" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+		COMMAND ${CMAKE_COMMAND} -E echo "INPUT              = ${CMAKE_CURRENT_SOURCE_DIR}/include" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+		)
+	IF (DOXYGEN_DOT_FOUND)
+	    LIST (APPEND Doxyfile_CONTENT
+			COMMAND ${CMAKE_COMMAND} -E echo "HAVE_DOT       = YES" >> ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+			)
+	ENDIF ()
+	ADD_CUSTOM_TARGET (
+		doxygen
+		${Doxyfile_CONTENT}
+		COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+		VERBATIM
+		)
 ENDIF ()
